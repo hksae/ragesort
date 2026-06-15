@@ -25,10 +25,7 @@ void radix_pass(int* arr, int n, int bits, int* buf, int* cnt) {
         return;
     }
     
-    unsigned int flip = (bits == 32) ? (1U << 31) : 0;
-    if (flip) for (int i = 0; i < n; i++) arr[i] ^= flip;
-    
-    int *src = arr, *dst = buf;
+    unsigned int *src = (unsigned int*)arr, *dst = (unsigned int*)buf;
     
     for (int shift = 0; shift < bits; shift += 8) {
         if (shift >= 32) break;
@@ -47,24 +44,24 @@ void radix_pass(int* arr, int n, int bits, int* buf, int* cnt) {
             dst[cnt[b]++] = src[i];
         }
         
-        int* tmp = src;
+        unsigned int* tmp = src;
         src = dst;
         dst = tmp;
     }
     
-    if (src != arr) memcpy(arr, src, n * sizeof(int));
-    if (flip) for (int i = 0; i < n; i++) arr[i] ^= flip;
+    if (src != (unsigned int*)arr) memcpy(arr, src, n * sizeof(int));
 }
 
 void ragesort(int* data, int n, int* out, int* work, int flags) {
     if (n <= 1) return;
     
-    int pos_cnt[35] = {0}, neg_cnt[35] = {0};
+    int pos_cnt[33] = {0}, neg_cnt[33] = {0};
     int maxb = 0;
     
     for (int i = 0; i < n; i++) {
         if (data[i] < 0) {
-            int len = bit_len(-(unsigned int)data[i]);
+            unsigned int abs_val = -(unsigned int)data[i];
+            int len = bit_len(abs_val);
             neg_cnt[len]++;
             if (len > maxb) maxb = len;
         } else {
@@ -98,43 +95,46 @@ void ragesort(int* data, int n, int* out, int* work, int flags) {
         }
     }
     
-    pos_cnt[maxb + 1] = n;
-    for (int b = maxb + 2; b < 35; b++) pos_cnt[b] = n;
-    neg_cnt[-1 + 1] = neg_base;
-    for (int b = -2 + 1; b >= 0; b--) neg_cnt[b] = neg_base;
-    
-    int pos_ptr[35], neg_ptr[35];
+    int pos_ptr[33], neg_ptr[33];
     memcpy(pos_ptr, pos_cnt, sizeof(pos_cnt));
     memcpy(neg_ptr, neg_cnt, sizeof(neg_cnt));
     
     for (int i = 0; i < n; i++) {
         if (data[i] < 0) {
-            out[neg_ptr[bit_len(-(unsigned int)data[i])]++] = -(unsigned int)data[i];
+            unsigned int abs_val = -(unsigned int)data[i];
+            out[neg_ptr[bit_len(abs_val)]++] = (int)abs_val;
         } else {
             out[pos_ptr[bit_len((unsigned int)data[i])]++] = data[i];
         }
     }
     
+
     for (int b = maxb; b >= 0; b--) {
         int start = neg_cnt[b];
-        int size = neg_cnt[b - 1 + 1] - start;
+        int size = neg_ptr[b] - start;
         if (size) {
             radix_pass(out + start, size, b, work + start, cnt_buf);
             
             int l = start, r = start + size - 1;
             while (l < r) {
-                int tmp = -out[l];
-                out[l] = -out[r];
-                out[r] = tmp;
+                unsigned int left_val = (unsigned int)out[l];
+                unsigned int right_val = (unsigned int)out[r];
+                out[l] = -(int)right_val;
+                out[r] = -(int)left_val;
                 l++; r--;
             }
-            if (l == r) out[l] = -out[l];
+            if (l == r) {
+                out[l] = -(int)((unsigned int)out[l]);
+            }
         }
     }
     
+\
+
+
     for (int b = 0; b <= maxb; b++) {
-        int start = neg_base + pos_cnt[b];
-        int size = pos_cnt[b + 1] - pos_cnt[b];
+        int start = pos_cnt[b];
+        int size = pos_ptr[b] - start;
         if (size) radix_pass(out + start, size, b, work + start, cnt_buf);
     }
     

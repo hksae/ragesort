@@ -25,7 +25,10 @@ demo: $(BUILD_DIR)
 	@$(BUILD_DIR)/demo
 
 clean:
-	@rm -rf $(BUILD_DIR)
+# Windows (PowerShell/CMD) and Linux/macOS compatible cleanup
+	@if exist $(BUILD_DIR) (rmdir /s /q $(BUILD_DIR) 2>nul || cmd /c "rmdir /s /q $(BUILD_DIR)")
+	@if exist CMakeCache.txt del CMakeCache.txt 2>nul
+	@if exist CMakeFiles rmdir /s /q CMakeFiles 2>nul
 
 install: $(BUILD_DIR)
 	@cmake --install $(BUILD_DIR)

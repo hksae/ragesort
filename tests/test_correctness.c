@@ -154,7 +154,18 @@ int test_extreme_values() {
     int n = sizeof(data) / sizeof(data[0]);
     
     ragesort_auto(data, n);
-    ASSERT(memcmp(data, expected, sizeof(data)) == 0, "Extreme values (INT_MIN/INT_MAX)");
+    
+    for (int i = 0; i < n; i++) {
+        if (data[i] != expected[i]) {
+            printf("  Expected: ");
+            for (int j = 0; j < n; j++) printf("%d ", expected[j]);
+            printf("\n");
+            printf("  Got:      ");
+            for (int j = 0; j < n; j++) printf("%d ", data[j]);
+            printf("\n");
+            ASSERT(0, "Extreme values (INT_MIN/INT_MAX) - element mismatch");
+        }
+    }
     return 0;
 }
 
